@@ -10,6 +10,7 @@ public class Player {
 	
 	private Snake snake;
 	private IntVector2 movementDirection;
+	private IntVector2 previousMovementDirection;
 	private long lastUpdateTime;
 	private boolean dead = false;
 	private int score = 0;
@@ -33,6 +34,7 @@ public class Player {
 																		 boundaries.getMinY() + 3, 
 																		 boundaries.getMaxY() - 3)));
 		this.movementDirection = Utils.randomDirection();
+		this.previousMovementDirection = this.movementDirection;
 	}
 	
 	public void setMovementDirection(IntVector2 dir) {
@@ -47,7 +49,7 @@ public class Player {
 				return;
 			}
 			
-			if (movementDirection.add(dir).hasMagnitudeZero()) return;
+			if (this.previousMovementDirection.add(dir).hasMagnitudeZero()) return;
 		
 			this.movementDirection = dir;
 		} finally {
@@ -88,6 +90,7 @@ public class Player {
 		try {
 			this.dirLock.readLock().lock();
 			this.snake.move(movementDirection);
+			this.previousMovementDirection = this.movementDirection;
 		} finally {
 			this.dirLock.readLock().unlock();
 		}
