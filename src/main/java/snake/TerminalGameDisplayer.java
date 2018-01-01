@@ -1,6 +1,7 @@
 package snake;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 
 import com.googlecode.lanterna.SGR;
@@ -8,15 +9,14 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
-import com.googlecode.lanterna.terminal.swing.TerminalEmulatorColorConfiguration;
-import com.googlecode.lanterna.terminal.swing.TerminalEmulatorPalette;
+import com.googlecode.lanterna.terminal.swing.AWTTerminalFontConfiguration;
 
 public class TerminalGameDisplayer implements Runnable {
 
 	private long lastUpdate;
 	private Terminal terminal;
 	
-	private final long millisBetweenUpdates = 10; // 60 fps = 17, 30 fps = 34, 15 fps = 68
+	private final long millisBetweenUpdates = 68; // 60 fps = 17, 30 fps = 34, 15 fps = 68
 	private final Game game;
 	private final int rows;
 	private final int cols;
@@ -117,17 +117,20 @@ public class TerminalGameDisplayer implements Runnable {
 			DefaultTerminalFactory factory = new DefaultTerminalFactory(System.out, System.in, Charset.forName("UTF8"));
 			
 			factory.setTerminalEmulatorTitle("Snake");
-			factory.setTerminalEmulatorColorConfiguration(
-					TerminalEmulatorColorConfiguration.newInstance(TerminalEmulatorPalette.WINDOWS_XP_COMMAND_PROMPT));
 			factory.setInitialTerminalSize(new TerminalSize(cols, rows));
-			
+			factory.setTerminalEmulatorFontConfiguration(
+				AWTTerminalFontConfiguration.getDefault());
+
+			// using reflection to get at font size variable
+			Field field = AWTTerminalFontConfiguration.class.getDeclaredField("CHOSEN_FONT_SIZE");
+			field.setAccessible(true);
+			field.set(null, Integer.valueOf(56)); // magic number, the value of the font size that seems to work well
+
 			terminal = factory.createTerminalEmulator();
-			
 			terminal.enterPrivateMode();
-			
 			drawLoop(terminal, game);
 			
-		} catch (IOException | InterruptedException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} finally {
 			try {
