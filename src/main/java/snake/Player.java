@@ -70,25 +70,25 @@ public class Player {
 		if (secondsSinceLastUpdate < timeBetweenUpdates()) return;
 		this.lastUpdateTime = end;
 		
-		// boundaries logic
-		if (!boundaries.isInBounds(snake.head())) {
-			dead = true;
-			return;
-		}
-		
-		// eating self or other snake logic
-		IntVector2 snakeHead = this.snake.head();
-		this.snakeSegments.remove(snakeHead);
-		if (this.snakeSegments.contains(snakeHead)) {
-			dead = true;
-		}
-		this.snakeSegments.add(snakeHead);
-		if (dead) return;
-		
-		// movement logic
-		this.snakeSegments.removeAll(this.snake.segments());
 		try {
 			this.dirLock.readLock().lock();
+		
+			IntVector2 nextHead = snake.head().add(this.movementDirection);
+
+			// boundaries logic
+			if (!boundaries.isInBounds(nextHead)) {
+				dead = true;
+				return;
+			}
+		
+			// eating self or other snake logic
+			if (this.snakeSegments.contains(nextHead)) {
+				dead = true;
+				return;
+			}
+			
+			// movement logic
+			this.snakeSegments.removeAll(this.snake.segments());
 			this.snake.move(movementDirection);
 			this.previousMovementDirection = this.movementDirection;
 		} finally {

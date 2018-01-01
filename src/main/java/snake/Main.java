@@ -71,7 +71,7 @@ public class Main {
 			game.getPlayers().stream()
 			    .sorted((a, b) -> b.getScore() - a.getScore())
 			    .forEach(player ->
-					System.out.printf("%-8s %-10s %10d%s", 
+					System.out.printf("%-10s %-10s %10d%s", 
 						"(" + player.getColor() + ")", player.getName(), 
 						player.getScore(), System.lineSeparator()));
 			
