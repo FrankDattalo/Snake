@@ -3,6 +3,9 @@ package snake;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.management.RuntimeErrorException;
 
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalSize;
@@ -39,12 +42,16 @@ public class TerminalGameDisplayer implements Runnable {
 		return false;
 	}
 	
-	private void writeString(Terminal terminal, String str, int x, int y, TextColor color) throws IOException {
-		terminal.setForegroundColor(color);
-		terminal.setCursorPosition(x, y);
-		char[] chars = str.toCharArray();
-		for (int i = 0; i < chars.length; i++) {
-			terminal.putCharacter(chars[i]);
+	private void writeString(Terminal terminal, String str, int x, int y, TextColor color) {
+		try {
+			terminal.setForegroundColor(color);
+			terminal.setCursorPosition(x, y);
+			char[] chars = str.toCharArray();
+			for (int i = 0; i < chars.length; i++) {
+				terminal.putCharacter(chars[i]);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -61,14 +68,7 @@ public class TerminalGameDisplayer implements Runnable {
 			terminal.clearScreen();
 			
 			// food drawing
-			game.forEachFoodSpot(food -> {
-					try {
-						writeString(terminal, "#", food.getX(), food.getY(), TextColor.ANSI.WHITE);
-					} catch (IOException e1) {
-						e1.printStackTrace();
-						throw new RuntimeException(e1);
-					}
-				});
+			game.forEachFoodSpot(food -> writeString(terminal, "#", food.getX(), food.getY(), TextColor.ANSI.WHITE));
 			
 			// horizontal boundaries drawing
 			for (int x = boundaries.getMinX(); x < boundaries.getMaxX(); x++) {
@@ -87,25 +87,50 @@ public class TerminalGameDisplayer implements Runnable {
 			writeString(terminal, "+", boundaries.getMaxX(), 0,                    TextColor.ANSI.WHITE);
 			writeString(terminal, "+", boundaries.getMaxX(), boundaries.getMaxY(), TextColor.ANSI.WHITE);
 			writeString(terminal, "+", 0,                    boundaries.getMaxY(), TextColor.ANSI.WHITE);
-			
-			game.forEachPlayer(player -> 
-				player.forEachSnakeSegment(segment -> {	
-					TextColor segmentColor = null;
-					switch (player.getColor()) {
-					case White: segmentColor = TextColor.ANSI.WHITE; break;
-					case Magenta: segmentColor = TextColor.ANSI.MAGENTA; break;
-					case Cyan: segmentColor = TextColor.ANSI.CYAN; break;
+
+			// score displaying
+			AtomicInteger counter = new AtomicInteger(0);
+						
+			game.forEachPlayer(player -> { 
+				TextColor color = null;
+				switch (player.getColor()) {
+					case White: color = TextColor.ANSI.WHITE; break;
+					case Magenta: color = TextColor.ANSI.MAGENTA; break;
+					case Cyan: color = TextColor.ANSI.CYAN; break;
 					default: 
-					case Yellow: segmentColor = TextColor.ANSI.YELLOW; break;
-					}
-					
-					try {
-						writeString(terminal, "O", segment.getX(), segment.getY(), segmentColor);
-					} catch (IOException e) {
-						e.printStackTrace();
-						throw new RuntimeException(e);
-					}
-				}));
+					case Yellow: color = TextColor.ANSI.YELLOW; break;
+				}
+
+				int x;
+				int y;
+				String score = String.valueOf(player.getScore());
+				switch (counter.getAndIncrement()) {
+					case 0:
+						x = 1;
+						y = 0;
+						break;
+					case 1:
+						x = this.game.getBoundaries().getMaxX() - 1 - score.length();
+						y = 0;
+						break;
+					case 2:
+						x = 1;
+						y = this.game.getBoundaries().getMaxY();
+						break;
+					default:
+					case 3:
+						x = this.game.getBoundaries().getMaxX() - 1 - score.length();
+						y = this.game.getBoundaries().getMaxY();
+				}
+
+				writeString(terminal, score, x, y, color);
+
+				// java is stupid
+				final TextColor segmentColor = color;
+				
+				player.forEachSnakeSegment(segment -> 
+					writeString(terminal, "O", segment.getX(), segment.getY(), segmentColor));
+			});
 			
 			terminal.flush();
 		}

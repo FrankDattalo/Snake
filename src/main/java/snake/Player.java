@@ -111,6 +111,11 @@ public class Player {
 	public boolean alive() {
 		return !dead;
 	}
+
+	public String getScoreDescription() {
+		return String.format("%-10s %-10s %10d", 
+			"(" + getColor() + ")", getName(), getScore());
+	}
 	
 	public void forEachSnakeSegment(Consumer<IntVector2> consumer) {
 		this.snake.segments().forEach(consumer);
