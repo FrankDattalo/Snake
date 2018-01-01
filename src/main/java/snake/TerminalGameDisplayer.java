@@ -106,20 +106,24 @@ public class TerminalGameDisplayer implements Runnable {
 				String score = String.valueOf(player.getScore());
 				switch (counter.getAndIncrement()) {
 					case 0:
+						// top left corner
 						x = 1;
 						y = 0;
 						break;
 					case 1:
-						x = this.game.getBoundaries().getMaxX() - 1 - score.length();
+						// top right corner
+						x = this.game.getBoundaries().getMaxX() - score.length();
 						y = 0;
 						break;
 					case 2:
+						// bottom left corner
 						x = 1;
 						y = this.game.getBoundaries().getMaxY();
 						break;
 					default:
 					case 3:
-						x = this.game.getBoundaries().getMaxX() - 1 - score.length();
+						// bottom right corner
+						x = this.game.getBoundaries().getMaxX() - score.length();
 						y = this.game.getBoundaries().getMaxY();
 				}
 
