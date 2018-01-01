@@ -26,17 +26,6 @@ public class Game {
 		this.boundaries = new Boundaries(1, cols - 1, 1, rows - 1);
 	}
 	
-	public void reset() {
-		try {
-			this.objectLock.writeLock().lock();
-			this.players.clear();
-			this.snakeSegments.clear();
-			this.foodSpots.clear();
-		} finally {
-			this.objectLock.writeLock().unlock();
-		}
-	}
-	
 	public int playerCount() {
 		try {
 			this.objectLock.readLock().lock();
