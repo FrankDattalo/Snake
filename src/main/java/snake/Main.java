@@ -29,9 +29,9 @@ public class Main {
 			int rows = 20;
 			int cols = 80;
 			
-			Game game = new Game(rows, cols);
+			Game game = new Game(rows, cols, Thread.currentThread());
 			TerminalGameDisplayer displayer = new TerminalGameDisplayer(game, Thread.currentThread());
-			ControllerRunner controllers = new ControllerRunner(Thread.currentThread());
+			ControllerRunner controllers = new ControllerRunner(game, Thread.currentThread());
 			
 			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 			
@@ -60,31 +60,16 @@ public class Main {
 			Thread controllerThread = new Thread(controllers);
 			controllerThread.start();
 			
-			try {
-				Thread.sleep(3000);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
-
 			game.start();
-			
-			game.getPlayers().stream()
-			    .sorted((a, b) -> b.getScore() - a.getScore())
-				.map(Player::getScoreDescription)
-				.forEach(System.out::println);
-				
-			try {
-				Thread.sleep(2500);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
 
 			controllers.stop();
 			
-			try {
-				controllerThread.join();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+			while (true) {
+				try {
+					controllerThread.join();
+					break;
+				} catch (InterruptedException e) {
+				}
 			}
 			
 		} finally {
@@ -119,6 +104,17 @@ public class Main {
 			if (state.dpadUp) return Controller.UP;
 			
 			return null;
-		}		
+		}
+
+		@Override
+		public boolean getGameReset() {
+			ControllerState state = manager.getState(index);
+			return state.b;
+		}
+
+		@Override
+		public boolean getGameQuit() {
+			return manager.getState(index).y;
+		}
 	}
 }

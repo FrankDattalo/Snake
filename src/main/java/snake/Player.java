@@ -23,18 +23,26 @@ public class Player {
 	
 	private final ReadWriteLock dirLock = new ReentrantReadWriteLock();
 	
-	public Player(Boundaries boundaries, Set<IntVector2> foodLocations, List<IntVector2> snakeSegments, String name, Color color) {
+	public Player(Boundaries boundaries, Set<IntVector2> foodLocations, 
+				  List<IntVector2> snakeSegments, String name, Color color) {
 		this.boundaries = boundaries;
 		this.foodLocations = foodLocations;
 		this.snakeSegments = snakeSegments;
 		this.name = name;
 		this.color = color;
+		this.reset();
+	}
+
+	public void reset() {
 		this.snake = new Snake(Utils.randomVectorInBounds(new Boundaries(boundaries.getMinX() + 3, 
 																		 boundaries.getMaxX() - 3, 
 																		 boundaries.getMinY() + 3, 
 																		 boundaries.getMaxY() - 3)));
 		this.movementDirection = Utils.randomDirection();
 		this.previousMovementDirection = this.movementDirection;
+		this.score = 0;
+		this.dead = false;
+		this.snakeSegments.add(this.snake.head());
 	}
 	
 	public void setMovementDirection(IntVector2 dir) {
@@ -58,7 +66,16 @@ public class Player {
 	}
 	
 	private long timeBetweenUpdates() {
-		return Math.max(10, 150 - snake.length() + 1);
+		try {
+			this.dirLock.readLock().lock();
+			long base = Math.max(10, 150 - snake.length() + 1);
+			if (this.movementDirection.equals(Controller.UP) || this.movementDirection.equals(Controller.DOWN)) {
+				base *= 1.25;
+			}
+			return base;
+		} finally {
+			this.dirLock.readLock().unlock();
+		}
 	}
 	
 	public void update() {
@@ -113,8 +130,7 @@ public class Player {
 	}
 
 	public String getScoreDescription() {
-		return String.format("%-10s %-10s %10d", 
-			"(" + getColor() + ")", getName(), getScore());
+		return String.format("%-10s %10d", getName(), getScore());
 	}
 	
 	public void forEachSnakeSegment(Consumer<IntVector2> consumer) {

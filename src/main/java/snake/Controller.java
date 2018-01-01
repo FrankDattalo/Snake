@@ -10,4 +10,8 @@ public interface Controller {
 	public Player getPlayer();
 	
 	public IntVector2 getDirection();
+
+	public boolean getGameReset();
+
+	public boolean getGameQuit();
 }

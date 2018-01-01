@@ -19,11 +19,46 @@ public class Game {
 	
 	private final long timeBetweenFood = 2000; // 2 seconds
 	private long lastFoodSpawn;
-	
+	private volatile boolean quit;
+	private volatile boolean wasJustReset = false;
+	private Thread gameRunner;
+
+	private final long timeBetweenResets = 1000; // 1 second
+	private long lastReset;
+
 	private static final Color[] COLORS = new Color[] {Color.Yellow, Color.Magenta, Color.Cyan, Color.White};
 	
-	public Game(int rows, int cols) {
+	public Game(int rows, int cols, Thread gameRunner) {
 		this.boundaries = new Boundaries(1, cols - 1, 1, rows - 1);
+		this.reset(true);
+		this.gameRunner = gameRunner;
+	}
+
+	public void reset(boolean shouldReset) {
+		if (!shouldReset) return;
+
+		try {
+			this.objectLock.writeLock().lock();
+			if (wasJustReset) return;
+
+			long end = System.currentTimeMillis();
+			long delta = end - lastReset;
+			if (delta < timeBetweenResets) return;
+			lastReset = end;
+
+			foodSpots.clear();
+			wasJustReset = true;
+			this.snakeSegments.clear();
+			players.forEach(Player::reset);
+		} finally {
+			this.objectLock.writeLock().unlock();
+		}
+	}
+
+	public void quit(boolean quit) {
+		this.quit = quit;
+		if (quit)
+			this.gameRunner.interrupt();
 	}
 	
 	public int playerCount() {
@@ -77,22 +112,36 @@ public class Game {
 			this.objectLock.writeLock().unlock();
 		}
 	}
+
+	private boolean shouldSleep() {
+		try {
+			this.objectLock.writeLock().lock();
+			if (wasJustReset) {
+				wasJustReset = false;
+				return true;
+			} else {
+				return false;
+			}
+		} finally {
+			this.objectLock.writeLock().unlock();
+		}
+	}
 	
 	public void start() {
 		
-		while (true) {
-			int numPlayersAlive = this.numAlivePlayers();
-			int numPlayers = this.players.size();
-			
-			// case 1 - there is only one alive player and it is a multi-player game -> return winningPlayer()
-			// case 2 - there is only one alive player and it is a single player game -> continue
-			// case 3 - there are no players alive and it is a multi-player game -> return null (Tie)
-			// case 4 - there is no players alive and it is a single player game -> return player
-			if (numPlayersAlive == 1 && numPlayers > 1) return;
-			if (numPlayersAlive == 1 && numPlayers == 1);
-			if (numPlayersAlive == 0 && numPlayers > 1) return;
-			if (numPlayersAlive == 0 && numPlayers == 1) return;
-			
+		while (!quit) {
+			if (shouldSleep()) {
+				try {
+					Thread.sleep(2500);
+				} catch (InterruptedException e) {
+				}
+			}
+
+			// after waking up
+			if (quit) break;
+
+			if (isGameOver()) continue;
+
 			foodUpdate();
 			
 			try {
@@ -101,6 +150,29 @@ public class Game {
 			} finally {
 				this.objectLock.writeLock().unlock();
 			}
+		}
+	}
+
+	public boolean isGameOver() {
+		try {
+			this.objectLock.readLock().lock();
+
+			int numPlayersAlive = this.numAlivePlayers();
+			int numPlayers = this.players.size();
+			
+			// case 1 - there is only one alive player and it is a multi-player game -> return winningPlayer()
+			// case 2 - there is only one alive player and it is a single player game -> continue
+			// case 3 - there are no players alive and it is a multi-player game -> return null (Tie)
+			// case 4 - there is no players alive and it is a single player game -> return player
+			if (numPlayersAlive == 1 && numPlayers > 1) return true;
+			if (numPlayersAlive == 1 && numPlayers == 1) return false; // ok case
+			if (numPlayersAlive == 0 && numPlayers > 1) return true;
+			if (numPlayersAlive == 0 && numPlayers == 1) return true;
+		
+			return false;
+
+		} finally {
+			this.objectLock.readLock().unlock();
 		}
 	}
 	

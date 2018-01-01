@@ -3,9 +3,9 @@ package snake;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.management.RuntimeErrorException;
+import java.util.stream.Collectors;
 
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalSize;
@@ -136,6 +136,27 @@ public class TerminalGameDisplayer implements Runnable {
 					writeString(terminal, "O", segment.getX(), segment.getY(), segmentColor));
 			});
 			
+			if (game.isGameOver()) {
+				List<Player> scores = 
+					game.getPlayers()
+						.stream()
+						.sorted((a, b) -> b.getScore() - a.getScore())
+						.collect(Collectors.toList());
+			
+				writeString(terminal, "Scores:", 2, 2, TextColor.ANSI.WHITE);
+				for (int i = 0, y = 3; i < scores.size(); i++, y++) {
+					TextColor color = null;
+					switch (scores.get(i).getColor()) {
+						case White: color = TextColor.ANSI.WHITE; break;
+						case Magenta: color = TextColor.ANSI.MAGENTA; break;
+						case Cyan: color = TextColor.ANSI.CYAN; break;
+						default: 
+						case Yellow: color = TextColor.ANSI.YELLOW; break;
+					}
+					writeString(terminal, scores.get(i).getScoreDescription(), 2, y, color);
+				}
+			}
+
 			terminal.flush();
 		}
 	}
