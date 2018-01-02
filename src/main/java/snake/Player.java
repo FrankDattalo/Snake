@@ -17,8 +17,9 @@ public class Player {
 	private int score = 0;
 	private boolean tron;
 	private final long passiveScoreTime = 1000; // 1 second
-	private long lastScoreUpdate; 
-	
+	private long lastScoreUpdate;
+
+	private final Game game;
 	private final String name;
 	private final Color color;
 	private final Set<IntVector2> foodLocations;
@@ -28,12 +29,13 @@ public class Player {
 	private final ReadWriteLock dirLock = new ReentrantReadWriteLock();
 	
 	public Player(Boundaries boundaries, Set<IntVector2> foodLocations, 
-				  Map<IntVector2, Player> snakeSegments, String name, Color color, boolean tron) {
+				  Map<IntVector2, Player> snakeSegments, String name, Color color, boolean tron, Game game) {
 		this.boundaries = boundaries;
 		this.foodLocations = foodLocations;
 		this.snakeSegments = snakeSegments;
 		this.name = name;
 		this.color = color;
+		this.game = game;
 		this.reset(tron);
 	}
 
@@ -90,6 +92,13 @@ public class Player {
 		this.lastScoreUpdate = end;
 		this.score += this.snake.segments().size() / 8;
 	}
+
+	private void survivorPoints(Player other) {
+		game.forEachPlayer(player -> {
+			if (player == this || player == other || player.dead) return;
+			player.score += this.score / 2;
+		});
+	}
 	
 	public void update() {
 		if (dead) return;
@@ -110,6 +119,7 @@ public class Player {
 			// boundaries logic
 			if (!boundaries.isInBounds(nextHead)) {
 				dead = true;
+				this.survivorPoints(null);
 				return;
 			}
 		
@@ -120,6 +130,7 @@ public class Player {
 					other.score += this.score;
 				}
 				dead = true;
+				this.survivorPoints(other);
 				return;
 			}
 			
