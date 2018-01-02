@@ -85,7 +85,7 @@ public class Game {
 				player.getName().equalsIgnoreCase(name))) return null;
 			
 			Color color = COLORS[players.size()];
-			Player player = new Player(boundaries, foodSpots, snakeSegments, name, color, tron);
+			Player player = new Player(boundaries, foodSpots, snakeSegments, name, color, tron, this);
 			players.add(player);
 			this.snakeSegments.put(player.getSnakeHead(), player);
 			return player;

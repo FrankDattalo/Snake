@@ -90,7 +90,7 @@ public class Player {
 		long delta = end - this.lastScoreUpdate;
 		if (delta < this.passiveScoreTime) return;
 		this.lastScoreUpdate = end;
-		this.score += this.snake.segments().size() / 8;
+		this.score += Math.max(snake.segments().size() / 8, 1);
 	}
 
 	private void survivorPoints(Player other) {
