@@ -8,7 +8,7 @@ This game was tested on Windows 10, feel free to try it on other operating syste
 There are two modes to the game:
 1. Snake mode - Food spawns gradually which, when eaten, will increase the snake’s size
 2. Tron mode - Players leave a trail behind them that will never disappear
-In order to start the game you must be within the downloaded directory and type the following command: `java -jar build\libs\snake.jar <--skip-names or –names> <--tron or –snake>`
-Using `–skip-names` will not prompt the user to enter any names or number of players, the maximum amount of detected controllers will be used and players will be given generic names.  Using `--tron` or `--snake` will set the desired game mode.
+In order to start the game you must be within the downloaded directory and type the following command: `java -jar build\libs\snake.jar <--skip-names or --names> <--tron or --snake>`
+Using `--skip-names` will not prompt the user to enter any names or number of players, the maximum amount of detected controllers will be used and players will be given generic names.  Using `--tron` or `--snake` will set the desired game mode.
 ## Controls
 In order to play this game, a controller is required.  Move using the d-pad, reset the game using the B button, and quit using the Y button.
