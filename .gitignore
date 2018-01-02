@@ -4,3 +4,5 @@ bin
 build
 .classpath
 .project
+.vscode 
+hs_err_pid*.log
