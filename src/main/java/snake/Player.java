@@ -1,6 +1,7 @@
 package snake;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -14,26 +15,29 @@ public class Player {
 	private long lastUpdateTime;
 	private boolean dead = false;
 	private int score = 0;
+	private boolean tron;
+	private final long passiveScoreTime = 1000; // 1 second
+	private long lastScoreUpdate; 
 	
 	private final String name;
 	private final Color color;
 	private final Set<IntVector2> foodLocations;
 	private final Boundaries boundaries;
-	private final List<IntVector2> snakeSegments;
+	private final Map<IntVector2, Player> snakeSegments;
 	
 	private final ReadWriteLock dirLock = new ReentrantReadWriteLock();
 	
 	public Player(Boundaries boundaries, Set<IntVector2> foodLocations, 
-				  List<IntVector2> snakeSegments, String name, Color color) {
+				  Map<IntVector2, Player> snakeSegments, String name, Color color, boolean tron) {
 		this.boundaries = boundaries;
 		this.foodLocations = foodLocations;
 		this.snakeSegments = snakeSegments;
 		this.name = name;
 		this.color = color;
-		this.reset();
+		this.reset(tron);
 	}
 
-	public void reset() {
+	public void reset(boolean tron) {
 		this.snake = new Snake(Utils.randomVectorInBounds(new Boundaries(boundaries.getMinX() + 3, 
 																		 boundaries.getMaxX() - 3, 
 																		 boundaries.getMinY() + 3, 
@@ -42,7 +46,8 @@ public class Player {
 		this.previousMovementDirection = this.movementDirection;
 		this.score = 0;
 		this.dead = false;
-		this.snakeSegments.add(this.snake.head());
+		this.snakeSegments.put(this.snake.head(), this);
+		this.tron = tron;
 	}
 	
 	public void setMovementDirection(IntVector2 dir) {
@@ -68,7 +73,7 @@ public class Player {
 	private long timeBetweenUpdates() {
 		try {
 			this.dirLock.readLock().lock();
-			long base = Math.max(10, 150 - snake.length() + 1);
+			long base = Math.max(100, 150 - snake.length() + 1);
 			if (this.movementDirection.equals(Controller.UP) || this.movementDirection.equals(Controller.DOWN)) {
 				base *= 1.25;
 			}
@@ -77,9 +82,19 @@ public class Player {
 			this.dirLock.readLock().unlock();
 		}
 	}
+
+	private void passiveScoreUpdate() {
+		long end = System.currentTimeMillis();
+		long delta = end - this.lastScoreUpdate;
+		if (delta < this.passiveScoreTime) return;
+		this.lastScoreUpdate = end;
+		this.score += this.snake.segments().size() / 8;
+	}
 	
 	public void update() {
 		if (dead) return;
+
+		passiveScoreUpdate();
 		
 		// sleep logic
 		long end = System.currentTimeMillis();
@@ -99,20 +114,29 @@ public class Player {
 			}
 		
 			// eating self or other snake logic
-			if (this.snakeSegments.contains(nextHead)) {
+			if (this.snakeSegments.containsKey(nextHead)) {
+				Player other = this.snakeSegments.get(nextHead);
+				if (other != this) {
+					other.score += this.score;
+				}
 				dead = true;
 				return;
 			}
 			
 			// movement logic
-			this.snakeSegments.removeAll(this.snake.segments());
+			this.snake.segments().forEach(this.snakeSegments::remove);
 			this.snake.move(movementDirection);
 			this.previousMovementDirection = this.movementDirection;
+			this.snake.segments().forEach(segment -> this.snakeSegments.put(segment, this));
+			
 		} finally {
 			this.dirLock.readLock().unlock();
 		}
-		
-		this.snakeSegments.addAll(this.snake.segments());
+
+		if (tron) {
+			this.snake.growOnNextMove();
+			return;
+		}
 		
 		// grow logic
 		for (IntVector2 segment : this.snake.segments()) {

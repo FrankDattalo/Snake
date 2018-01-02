@@ -1,8 +1,10 @@
 package snake;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -13,7 +15,7 @@ public class Game {
 	private final ReadWriteLock objectLock = new ReentrantReadWriteLock();
 	
 	private final List<Player> players = new ArrayList<Player>();
-	private final List<IntVector2> snakeSegments = new ArrayList<IntVector2>();
+	private final Map<IntVector2, Player> snakeSegments = new HashMap<IntVector2, Player>();
 	private final Set<IntVector2> foodSpots = new HashSet<IntVector2>();
 	private final Boundaries boundaries;
 	
@@ -23,15 +25,17 @@ public class Game {
 	private volatile boolean wasJustReset = false;
 	private Thread gameRunner;
 
+	private boolean tron;
 	private final long timeBetweenResets = 1000; // 1 second
 	private long lastReset;
 
 	private static final Color[] COLORS = new Color[] {Color.Yellow, Color.Magenta, Color.Cyan, Color.White};
 	
-	public Game(int rows, int cols, Thread gameRunner) {
+	public Game(int rows, int cols, Thread gameRunner, boolean tron) {
 		this.boundaries = new Boundaries(1, cols - 1, 1, rows - 1);
 		this.reset(true);
 		this.gameRunner = gameRunner;
+		this.tron = tron;
 	}
 
 	public void reset(boolean shouldReset) {
@@ -49,7 +53,7 @@ public class Game {
 			foodSpots.clear();
 			wasJustReset = true;
 			this.snakeSegments.clear();
-			players.forEach(Player::reset);
+			players.forEach(player -> player.reset(tron));
 		} finally {
 			this.objectLock.writeLock().unlock();
 		}
@@ -81,9 +85,9 @@ public class Game {
 				player.getName().equalsIgnoreCase(name))) return null;
 			
 			Color color = COLORS[players.size()];
-			Player player = new Player(boundaries, foodSpots, snakeSegments, name, color);
+			Player player = new Player(boundaries, foodSpots, snakeSegments, name, color, tron);
 			players.add(player);
-			this.snakeSegments.add(player.getSnakeHead());
+			this.snakeSegments.put(player.getSnakeHead(), player);
 			return player;
 			
 		} finally {
@@ -104,9 +108,10 @@ public class Game {
 		long end = System.currentTimeMillis();
 		if (end - lastFoodSpawn < timeBetweenFood) return;
 		lastFoodSpawn = end;
-		
+
 		try {
 			this.objectLock.writeLock().lock();
+			if (tron) return;
 			this.foodSpots.add(Utils.randomVectorInBounds(boundaries));
 		} finally {
 			this.objectLock.writeLock().unlock();

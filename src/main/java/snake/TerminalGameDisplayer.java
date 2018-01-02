@@ -142,7 +142,11 @@ public class TerminalGameDisplayer implements Runnable {
 						.stream()
 						.sorted((a, b) -> b.getScore() - a.getScore())
 						.collect(Collectors.toList());
-			
+		
+				String clearString = "                           ";
+
+				writeString(terminal, clearString, 1, 1, TextColor.ANSI.WHITE);
+				writeString(terminal, clearString, 1, 2, TextColor.ANSI.WHITE);
 				writeString(terminal, "Scores:", 2, 2, TextColor.ANSI.WHITE);
 				for (int i = 0, y = 3; i < scores.size(); i++, y++) {
 					TextColor color = null;
@@ -153,6 +157,8 @@ public class TerminalGameDisplayer implements Runnable {
 						default: 
 						case Yellow: color = TextColor.ANSI.YELLOW; break;
 					}
+					writeString(terminal, clearString, 1, y, TextColor.ANSI.WHITE);
+					writeString(terminal, clearString, 1, y + 1, TextColor.ANSI.WHITE);
 					writeString(terminal, scores.get(i).getScoreDescription(), 2, y, color);
 				}
 			}

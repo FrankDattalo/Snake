@@ -20,6 +20,13 @@ public class Main {
 	
 	public static void main(String[] args) {
 		boolean skipNames = args.length > 0 && "--skip-names".equalsIgnoreCase(args[0]);
+		boolean tron = args.length > 1 && "--tron".equalsIgnoreCase(args[1]);
+
+		if (skipNames) {
+			System.out.println("Skipping names.");
+		}
+
+		System.out.println("Starting " + (tron ? "tron" : "snake") + "  game.");
 
 		ControllerManager controllerManager = new ControllerManager();
 		
@@ -29,7 +36,7 @@ public class Main {
 			int rows = 20;
 			int cols = 80;
 			
-			Game game = new Game(rows, cols, Thread.currentThread());
+			Game game = new Game(rows, cols, Thread.currentThread(), tron);
 			TerminalGameDisplayer displayer = new TerminalGameDisplayer(game, Thread.currentThread());
 			ControllerRunner controllers = new ControllerRunner(game, Thread.currentThread());
 			
