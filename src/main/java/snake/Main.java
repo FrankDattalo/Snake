@@ -26,7 +26,7 @@ public class Main {
 			System.out.println("Skipping names.");
 		}
 
-		System.out.println("Starting " + (tron ? "tron" : "snake") + "  game.");
+		System.out.println("Starting " + (tron ? "tron" : "snake") + " game.");
 
 		ControllerManager controllerManager = new ControllerManager();
 		
